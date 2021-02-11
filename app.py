@@ -81,8 +81,6 @@ USER_STATE = UserState(MEMORY)
 
 
 main_Dialog = MainDialog(USER_STATE)
-print(type(USER_STATE))
-#DIALOG = FaceAnalysisDialog(USER_STATE)
 BOT = AskToMyBot(CONVERSATION_STATE , USER_STATE , main_Dialog)
 
 

@@ -22,6 +22,8 @@ class AskToMyBot(ActivityHandler):
         await self.user_state.save_changes(turn_context, False)
     
     async def on_message_activity(self, turn_context):
+        
+        
         await DialogHelper.run_dialog(
             self.dialog,
             turn_context,

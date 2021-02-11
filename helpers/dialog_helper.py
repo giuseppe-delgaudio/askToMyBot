@@ -14,6 +14,11 @@ class DialogHelper:
         dialog_set.add(dialog)
 
         dialog_context = await dialog_set.create_context(turn_context)
-        results = await dialog_context.continue_dialog()
-        if results.status == DialogTurnStatus.Empty:
-            await dialog_context.begin_dialog(dialog.id)
+        
+        if turn_context.activity.text == "/fine" :
+            await dialog_context.cancel_all_dialogs()
+
+        else :
+            results = await dialog_context.continue_dialog()
+            if results.status == DialogTurnStatus.Empty:
+                await dialog_context.begin_dialog(dialog.id)

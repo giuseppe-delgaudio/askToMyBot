@@ -19,9 +19,9 @@ from botbuilder.core import MessageFactory, UserState
 from data_models import UserProfile
 
 class FaceAnalysisDialog(ComponentDialog):
-    def __init__(self, dialog_id: str = None):
+    def __init__(self, dialog_id: str , user_state : UserState):
         super(FaceAnalysisDialog, self).__init__(
-            dialog_id or FaceAnalysisDialog.__name__
+            dialog_id 
         )
 
         self.add_dialog(

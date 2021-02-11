@@ -29,7 +29,7 @@ class MainDialog(ComponentDialog):
         self.user_state = user_state.create_property(
             "UserState"
         )
-        self.add_dialog( FaceAnalysisDialog(FaceAnalysisDialog.__name__) )
+        self.add_dialog( FaceAnalysisDialog(FaceAnalysisDialog.__name__ , self.user_state) )
         self.add_dialog(ChoicePrompt( "MainPrompt" ))
         self.add_dialog(
             WaterfallDialog(
@@ -45,11 +45,10 @@ class MainDialog(ComponentDialog):
             "MainPrompt",
             PromptOptions(
                 prompt=MessageFactory.text(
-                    "What card would you like to see? You can click or type the card name"
+                    "Seleziona un' azione da eseguire"
                 ),
                 retry_prompt=MessageFactory.text(
-                    "That was not a valid choice, please select a card or number from 1 "
-                    "to 9."
+                    "Effettua una scelta valida, ripova"
                 ),
                 choices=self.get_options(),
                 style=ListStyle.hero_card
@@ -64,7 +63,7 @@ class MainDialog(ComponentDialog):
         if result == "Analizza il tuo volto":
             return await step_context.begin_dialog(FaceAnalysisDialog.__name__)
         else :
-            step_context.context.send_activity( MessageFactory.text("Nessuna delle scelte è corretta riprova") )
+            await step_context.context.send_activity( MessageFactory.text("Nessuna delle scelte è corretta riprova") )
             return await step_context.replace_dialog("Waterfall_main") 
 
         return await step_context.end_dialog()
