@@ -31,5 +31,7 @@ class FaceCognitive():
 
             return None
         else : 
-            print( "\nshshhdcsau"+self.detected_face[0].face_id )
+            
             return self.detected_face[0]
+
+        

@@ -29,7 +29,7 @@ class MainDialog(ComponentDialog):
         self.user_state = user_state.create_property(
             "UserState"
         )
-        self.add_dialog( FaceAnalysisDialog(FaceAnalysisDialog.__name__ , self.user_state) )
+        self.add_dialog( FaceAnalysisDialog( "FaceAnalysisDialog" , self.user_state) )
         self.add_dialog(ChoicePrompt( "MainPrompt" ))
         self.add_dialog(
             WaterfallDialog(
@@ -61,7 +61,7 @@ class MainDialog(ComponentDialog):
         await step_context.context.send_activity(MessageFactory.text(result))
 
         if result == "Analizza il tuo volto":
-            return await step_context.begin_dialog(FaceAnalysisDialog.__name__)
+            return await step_context.begin_dialog("FaceAnalysisDialog")
         else :
             await step_context.context.send_activity( MessageFactory.text("Nessuna delle scelte è corretta riprova") )
             return await step_context.replace_dialog("Waterfall_main") 

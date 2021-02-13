@@ -41,7 +41,7 @@ class FaceAnalysisDialog(ComponentDialog):
 
         self.add_dialog(
             WaterfallDialog(
-                WaterfallDialog.__name__,[
+                "Waterfall_FaceAnalysis",[
                     self.imageUploadStep,
                     self.imageCheck,
                     self.elabStep,
@@ -61,7 +61,7 @@ class FaceAnalysisDialog(ComponentDialog):
         )
         
         #dialogo iniziale 
-        self.initial_dialog_id = WaterfallDialog.__name__   
+        self.initial_dialog_id = "Waterfall_FaceAnalysis"  
     
     async def imageUploadStep( self , step_context : WaterfallStepContext ) -> DialogTurnResult:
 
@@ -78,10 +78,15 @@ class FaceAnalysisDialog(ComponentDialog):
     async def imageCheck( self , step_context : WaterfallStepContext ) -> DialogTurnResult:
         #memorizzo l'immagine del turno precedente 
         step_context.values["image"] = step_context.result[0]
-
+        image = step_context.values["image"]
         await step_context.context.send_activity(
             MessageFactory.attachment(
-                step_context.values["image"]
+                
+                CardFactory.hero_card(
+                    HeroCard(
+                    images = [CardImage(url = image.content_url)]
+                    )
+                )
             )
         )
 
@@ -95,13 +100,9 @@ class FaceAnalysisDialog(ComponentDialog):
         if step_context.result:
             
             image = step_context.values["image"]
-            print(image.__dict__)
-            #print(image.content_url.)
            
-            #print( Image.open(BytesIO(requests.get(image.content_url+))).__dict__ )
-            res : Response = requests.get(image.content_url)
-            #print(res.content.__dict__)
-            #res = requests.get(image.content_url)
+            #Trasformo immagine in stream da url
+            res : Response = requests.get(image.content_url) 
             Image.open(BytesIO(res.content))
             await step_context.context.send_activity(MessageFactory.text("Ora dovrei elaborare"))
             #result = None
@@ -111,7 +112,7 @@ class FaceAnalysisDialog(ComponentDialog):
             if result is None :
                 
                 await step_context.context.send_activity(MessageFactory.text("Sembra che la foto non contenga visi prova a ricaricare la foto oppure premi /fine per terminare"))
-                return await step_context.replace_dialog( FaceAnalysisDialog.__name__ )
+                return await step_context.replace_dialog( "FaceAnalysisDialog" )
             
             # Viso rilevato ora preparo la scheda da mostrare
             else : 
@@ -131,7 +132,7 @@ class FaceAnalysisDialog(ComponentDialog):
         else :
             
             await step_context.context.send_activity(MessageFactory.text("Ti riporto all upload, premi /fine per terminare"))
-            return await step_context.replace_dialog( FaceAnalysisDialog.__name__ )
+            return await step_context.replace_dialog( "FaceAnalysisDialog" )
             
         
         return await step_context.prompt(
