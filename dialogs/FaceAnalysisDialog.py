@@ -4,6 +4,14 @@ from botbuilder.dialogs import (
     WaterfallStepContext,
     DialogTurnResult,
 )
+from botbuilder.schema import (
+    ActionTypes,
+    Attachment,
+    HeroCard,
+    CardAction,
+    CardImage
+    
+)
 from botbuilder.dialogs.prompts import (
     TextPrompt,
     NumberPrompt,
@@ -13,16 +21,23 @@ from botbuilder.dialogs.prompts import (
     PromptOptions,
     PromptValidatorContext,
 )
-from botbuilder.dialogs.choices import Choice
-from botbuilder.core import MessageFactory, UserState
-
+from botbuilder.dialogs.choices import Choice , ListStyle
+from botbuilder.core import MessageFactory, UserState , CardFactory
+from helpers.face_cognitive import FaceCognitive
 from data_models import UserProfile
+from azure.cognitiveservices.vision.face.models import * 
+from PIL import Image
+from io import BytesIO
+import requests 
 
 class FaceAnalysisDialog(ComponentDialog):
     def __init__(self, dialog_id: str , user_state : UserState):
         super(FaceAnalysisDialog, self).__init__(
             dialog_id 
         )
+
+        #Inizzializzo CognitiveSev
+        self.cognitive = FaceCognitive()
 
         self.add_dialog(
             WaterfallDialog(
@@ -39,10 +54,10 @@ class FaceAnalysisDialog(ComponentDialog):
             AttachmentPrompt(AttachmentPrompt.__name__ , FaceAnalysisDialog.picture_prompt_validator)
         )
         self.add_dialog(
-            ConfirmPrompt(ConfirmPrompt.__name__+"00")
+            ConfirmPrompt(ConfirmPrompt.__name__+"00" , default_locale="italian" )
         )
         self.add_dialog(
-            ConfirmPrompt(ConfirmPrompt.__name__+"01")
+            ConfirmPrompt(ConfirmPrompt.__name__+"01" , default_locale="italian" )
         )
         
         #dialogo iniziale 
@@ -72,16 +87,48 @@ class FaceAnalysisDialog(ComponentDialog):
 
         return await step_context.prompt(
             ConfirmPrompt.__name__+"00",
-            PromptOptions( prompt=MessageFactory.text("La foto è corretta ?") )
+            PromptOptions( prompt=MessageFactory.text("La foto è corretta ?")  , style=ListStyle.hero_card )
         )
     
     async def elabStep(self,step_context: WaterfallStepContext ) -> DialogTurnResult:
-
+        ## Risposta affermativa step precedente 
         if step_context.result:
             
+            image = step_context.values["image"]
+            print(image.__dict__)
+            #print(image.content_url.)
+           
+            #print( Image.open(BytesIO(requests.get(image.content_url+))).__dict__ )
+            res : Response = requests.get(image.content_url)
+            #print(res.content.__dict__)
+            #res = requests.get(image.content_url)
+            Image.open(BytesIO(res.content))
             await step_context.context.send_activity(MessageFactory.text("Ora dovrei elaborare"))
+            #result = None
+            result : DetectedFace = await self.cognitive.faceAnalysis(BytesIO(res.content))
 
-        else:
+            # Nessun viso rilevato riporto al caricamento
+            if result is None :
+                
+                await step_context.context.send_activity(MessageFactory.text("Sembra che la foto non contenga visi prova a ricaricare la foto oppure premi /fine per terminare"))
+                return await step_context.replace_dialog( FaceAnalysisDialog.__name__ )
+            
+            # Viso rilevato ora preparo la scheda da mostrare
+            else : 
+                
+                card = HeroCard(
+                    title="Il tuo risultato",
+                    images = [
+                        CardImage(url = image.content_url)
+                    ],
+                    text= await FaceAnalysisDialog.textImage(result.face_attributes)
+                )
+
+                await step_context.context.send_activity(MessageFactory.attachment(CardFactory.hero_card(card)))
+            
+
+        ## Risposta negativa utente ricarico foto
+        else :
             
             await step_context.context.send_activity(MessageFactory.text("Ti riporto all upload, premi /fine per terminare"))
             return await step_context.replace_dialog( FaceAnalysisDialog.__name__ )
@@ -89,7 +136,7 @@ class FaceAnalysisDialog(ComponentDialog):
         
         return await step_context.prompt(
             ConfirmPrompt.__name__+"01",
-            PromptOptions( prompt=MessageFactory.text("Vuoi salvare il risultato ?") )
+            PromptOptions( prompt=MessageFactory.text("Vuoi salvare il risultato ?"), style=ListStyle.hero_card  )
         )
     
     async def saveStep(self,step_context: WaterfallStepContext ) -> DialogTurnResult:
@@ -109,11 +156,11 @@ class FaceAnalysisDialog(ComponentDialog):
     async def picture_prompt_validator(prompt_context: PromptValidatorContext) -> bool:
         if not prompt_context.recognized.succeeded:
             await prompt_context.context.send_activity(
-                "No attachments received. Proceeding without a profile picture..."
+                "Ricarica un immagine valida oppure /fine"
             )
 
-            # We can return true from a validator function even if recognized.succeeded is false.
-            return True
+           
+            return False
 
         attachments = prompt_context.recognized.value
 
@@ -127,3 +174,37 @@ class FaceAnalysisDialog(ComponentDialog):
 
         # If none of the attachments are valid images, the retry prompt should be sent.
         return len(valid_images) > 0
+
+    
+    @staticmethod
+    async def textImage( face : FaceAttributes ) -> str :
+
+        res = ""
+         
+        
+        age = face.age
+        gender : Gender = face.gender
+        makeup : Makeup = face.makeup
+        emotions : Emotion = face.emotion
+        
+        res = res + f" Ciao, la tua età è di {age} \n"
+        if face.glasses != GlassesType.no_glasses:
+            res = res+"il risultato potrebbe dare un risultato migliore senza occhiali"
+        if gender == Gender.male : 
+            facial_hair : FacialHair = face.facial_hair
+            if age > 20 and (facial_hair.moustache >= 0.5 or facial_hair.beard >= 0.5) :
+                if facial_hair.moustache >= 0.5:
+                    res = res+"forse staresti meglio senza baffi potrebbe toglierti qualche anno,"
+                if facial_hair.beard >= 0.5:
+                    res = res+" già che ci sei potresti tagliare via anche la barba"
+
+        else : 
+
+            if makeup.lip_makeup or makeup.eye_makeup:
+                res = res+"forse potresti ottenere una valutazione più accurata da struccata,"
+        
+        if emotions.happiness >= 0.5 :
+            res = res+"\n sembri particolarmente felice oggi"
+        
+        res = res+", garzie e alla prossima\n"
+        return res 
