@@ -20,13 +20,10 @@ from botbuilder.core.integration import aiohttp_error_middleware
 from botbuilder.schema import Activity, ActivityTypes
 
 from config import DefaultConfig
-from dialogs import (
-    UserProfileDialog,
-    FaceAnalysisDialog
-)
+
 
 from dialogs.mainDialog import MainDialog
-from dialogs.FaceAnalysisDialog import FaceAnalysisDialog
+from dialogs.face_analysis_dialog import FaceAnalysisDialog
 from bots.askToMyBot import AskToMyBot
 from bots import DialogBot
 

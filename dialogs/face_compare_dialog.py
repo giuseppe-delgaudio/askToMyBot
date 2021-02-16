@@ -83,7 +83,7 @@ class FaceCompareDialog(ComponentDialog):
         #Prompt per ricerca personaggio 
         self.add_dialog( TextPrompt(TextPrompt.__name__+"Search") )
         #Prompt per scelta foto con custom validator
-        self.add_dialog( NumberPrompt(NumberPrompt.__name__+"ChoiceSearch" , FaceCompareDialog.choiceNumValidator ) )
+        self.add_dialog( ChoicePrompt(ChoicePrompt.__name__+"ChoiceSearch" ) )
 
        
         
@@ -186,13 +186,24 @@ class FaceCompareDialog(ComponentDialog):
         # Viso rilevato ora preparo la scheda da mostrare
         else : 
             
+            confidence = result.confidence * 100
+            text = None
+            if confidence >=80 :
+                text= "Wow siete praticamente uguali "
+            elif confidence >=60 : 
+                text= "Si nota una certa somiglianza ma non siete proprio gemelli"
+            elif confidence >= 30 :
+                text = "Potrebbe esserci una certa somiglianza, ma è molto lieve"
+            else : 
+                text= "Non ho individuato nessuna somiglianza"
+
             card = HeroCard(
                 title="Il tuo risultato",
                 images = [
                     CardImage(url =image1.content_url),
                     CardImage(url=image2)
                 ],
-                text= f"Il tuo grado di somiglianza è {result.confidence}"
+                text= f"Il tuo grado di somiglianza è {confidence}\n {text}"
             )
 
             await step_context.context.send_activity(MessageFactory.attachment(CardFactory.hero_card(card)))
@@ -317,51 +328,46 @@ class FaceCompareDialog(ComponentDialog):
 
 
         return await step_context.prompt(
-            NumberPrompt.__name__+"ChoiceSearch",
+            ChoicePrompt.__name__+"ChoiceSearch",
             PromptOptions(
-                prompt =MessageFactory.text("Effettua un scelta"),
-                retry_prompt=MessageFactory.text("Inserisci un risultato valido")
-            ) 
+                retry_prompt=MessageFactory.text("Inserisci una scelta valida"),
+                choices= FaceCompareDialog.get_options(len(list_search)),
+                style=ListStyle.hero_card
+            ),
+             
         )
 
     async def analyzeSearchStep( self , step_context ) -> DialogTurnResult : 
         #ottengo risultato da passo precedente e lo  estraggo dalla lista
-        choice = step_context.result
+        choice = step_context.result.value
         images : list = step_context.values["searchImages"]
 
         
         #termino dialogo con il risultato selezionato 
         
-        return await step_context.end_dialog(images[int(choice)-1])
+        return await step_context.end_dialog(images[int(choice)-2])
 
 
     @staticmethod
     def generateHeroCardPhoto( url_send , choice ) -> Attachment :
         
         card = HeroCard(
-            title="Scelta"+str(choice),
+            title="Immagine "+str(choice),
             images=[
                 CardImage(
                     url=url_send
-                )
-            ],
-            buttons=[
-                CardAction(
-                    type=ActionTypes.im_back,
-                    title="Scelta "+str(choice),
-                    value=choice,
-
                 )
             ]
         )
         return CardFactory.hero_card(card)
 
     @staticmethod
-    async def choiceNumValidator( prompt_context : PromptValidatorContext ) -> bool : 
-
-        #controlla se il valore sestituito è un numero e se è compreso tra 1 e 3
-        if prompt_context.recognized.succeeded and 1 <= prompt_context.recognized.value <= 3 :
-            return True
+    def get_options( numChoice : int ):
         
-        else :
-            return False
+        options = []
+        
+        for i in range( numChoice) :
+            choice = Choice(value=str(i+1))
+            options.append(choice)
+
+        return options  

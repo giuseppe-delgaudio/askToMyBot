@@ -11,9 +11,10 @@ class DefaultConfig:
     """ Bot Configuration """
 
     PORT = 3978
-    APP_ID = os.environ.get("MicrosoftAppId", "bc48ebee-f228-474b-856d-e1003ddf9be3")
-    APP_PASSWORD = os.environ.get("MicrosoftAppPassword", "VIXj8A6eL-F2OpVa376dBO5.w4oj_8j6f-")
-
+    #APP_ID = os.environ.get("MicrosoftAppId", "bc48ebee-f228-474b-856d-e1003ddf9be3")
+    #APP_PASSWORD = os.environ.get("MicrosoftAppPassword", "VIXj8A6eL-F2OpVa376dBO5.w4oj_8j6f-")
+    APP_ID = os.environ.get("MicrosoftAppId", "")
+    APP_PASSWORD = os.environ.get("MicrosoftAppPassword", "")
     ## Parametri Cognitive Viso ##
 
     ENDPOINT = "https://faceapiaskbot.cognitiveservices.azure.com/"

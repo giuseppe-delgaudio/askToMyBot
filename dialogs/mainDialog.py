@@ -5,7 +5,7 @@ from botbuilder.dialogs import (
     DialogTurnResult,
 )
 from dialogs.face_compare_dialog import FaceCompareDialog
-from dialogs.FaceAnalysisDialog import FaceAnalysisDialog
+from dialogs.face_analysis_dialog import FaceAnalysisDialog
 from botbuilder.dialogs.prompts import ChoicePrompt, PromptOptions
 from botbuilder.dialogs.choices import Choice,ListStyle
 from botbuilder.core import (

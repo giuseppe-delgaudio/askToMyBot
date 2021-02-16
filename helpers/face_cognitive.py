@@ -48,6 +48,10 @@ class FaceCognitive():
         self.face1 : DetectedFace =  await self.faceAnalysis(image1 , "b")
         self.face2 : DetectedFace =  await self.faceAnalysis(image2 , "b")
 
-        result : VerifyResult = self.face_client.face.verify_face_to_face(self.face1.face_id , self.face2.face_id )
+        if (self.face1 != None ) and (self.face2 != None) : 
 
-        return result
+            result : VerifyResult = self.face_client.face.verify_face_to_face(self.face1.face_id , self.face2.face_id )
+
+            return result
+        else : 
+            return None
