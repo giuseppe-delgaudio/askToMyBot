@@ -103,7 +103,7 @@ class FaceAnalysisDialog(ComponentDialog):
            
             #Trasformo immagine in stream da url
             res : Response = requests.get(image.content_url) 
-            Image.open(BytesIO(res.content))
+            
             await step_context.context.send_activity(MessageFactory.text("Ora dovrei elaborare"))
             #result = None
             result : DetectedFace = await self.cognitive.faceAnalysis(BytesIO(res.content))

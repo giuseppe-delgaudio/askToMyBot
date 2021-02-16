@@ -4,6 +4,7 @@ from botbuilder.dialogs import (
     WaterfallStepContext,
     DialogTurnResult,
 )
+from dialogs.face_compare_dialog import FaceCompareDialog
 from dialogs.FaceAnalysisDialog import FaceAnalysisDialog
 from botbuilder.dialogs.prompts import ChoicePrompt, PromptOptions
 from botbuilder.dialogs.choices import Choice,ListStyle
@@ -30,6 +31,7 @@ class MainDialog(ComponentDialog):
             "UserState"
         )
         self.add_dialog( FaceAnalysisDialog( "FaceAnalysisDialog" , self.user_state) )
+        self.add_dialog( FaceCompareDialog( "FaceCompareDialog" , self.user_state ) )
         self.add_dialog(ChoicePrompt( "MainPrompt" ))
         self.add_dialog(
             WaterfallDialog(
@@ -62,6 +64,11 @@ class MainDialog(ComponentDialog):
 
         if result == "Analizza il tuo volto":
             return await step_context.begin_dialog("FaceAnalysisDialog")
+        
+        elif result == "Confronta due visi" :
+
+            return await step_context.begin_dialog( "FaceCompareDialog" )
+        
         else :
             await step_context.context.send_activity( MessageFactory.text("Nessuna delle scelte è corretta riprova") )
             return await step_context.replace_dialog("Waterfall_main") 
@@ -79,6 +86,11 @@ class MainDialog(ComponentDialog):
                 ),
                 CardAction(
                     type=ActionTypes.im_back,
+                    title="Compara due volti",
+                    value="/comparaVolti"
+                ),
+                CardAction(
+                    type=ActionTypes.im_back,
                     title="Aiuto",
                     value="/aiuto"
                 )
@@ -90,7 +102,7 @@ class MainDialog(ComponentDialog):
     def get_options(self):
         options = [
             Choice(value="Analizza il tuo volto",synonyms=["/analisiVolto"]),
-            Choice(value="Confronta due visi",synonyms=["/"]),
+            Choice(value="Confronta due visi",synonyms=["/confrontoVisi"]),
             Choice(value="Aiuto",synonyms=["/aiuto"]),
         ]
         return options
