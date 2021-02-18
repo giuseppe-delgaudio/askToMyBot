@@ -203,7 +203,7 @@ class FaceCompareDialog(ComponentDialog):
                     CardImage(url =image1.content_url),
                     CardImage(url=image2)
                 ],
-                text= f"Il tuo grado di somiglianza è {confidence}\n {text}"
+                text= f"Il tuo grado di somiglianza è {round(confidence,2)}\n {text}"
             )
 
             await step_context.context.send_activity(MessageFactory.attachment(CardFactory.hero_card(card)))
@@ -309,7 +309,7 @@ class FaceCompareDialog(ComponentDialog):
         to_search = step_context.result
         await step_context.context.send_activity("Seleziona un immagine")
         list_search : list = self.search.searchImage(to_search)
-        print(len(list_search))
+        
         if len(list_search) == 0 :
             await step_context.context.send_activity("Mi dispiace nessuna corrispondenza prova ad usare altre parole")
             return step_context.replace_dialog( WaterfallDialog.__name__+"Search" )
