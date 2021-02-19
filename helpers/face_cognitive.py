@@ -158,11 +158,11 @@ class FaceCognitive():
                 faceIds = list()
                 faceIds.append(str(toIdentify.face_id))
                 identify : IdentifyResult = self.face_client.face.identify(face_ids=faceIds , person_group_id=person_group ,max_num_of_candidates_returned=1 , confidence_threshold=0.1 )
-                #identify : SimilarFace = self.face_client.face.find_similar(face_id=toIdentify.face_id ,max_num_of_candidates_returned=1 )
+                
                 if len(identify) > 0 : 
-                    #candidate : SimilarFace = identify[0]
+                    
                     candidate : IdentifyCandidate = identify[0].candidates[0]
-                    #ids = candidate.face_id
+                    
                     ids = candidate.person_id
                     result.append(candidate.confidence)
                     person : Person = self.face_client.person_group_person.get(person_group_id=person_group , person_id=ids  )

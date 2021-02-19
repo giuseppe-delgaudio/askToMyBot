@@ -345,7 +345,7 @@ class FaceCompareDialog(ComponentDialog):
         
         #termino dialogo con il risultato selezionato 
         
-        return await step_context.end_dialog(images[int(choice)-2])
+        return await step_context.end_dialog(images[int(choice)-1])
 
 
     @staticmethod
