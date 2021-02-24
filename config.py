@@ -28,7 +28,7 @@ class DefaultConfig:
 
     # Parametri FunctionURL
     
-    BASE_FUNCTION_URL = "https://asktomybot-functiondb.azurewebsites.net/api/functionDB/"
+    BASE_FUNCTION_URL = "https://function-db.azurewebsites.net/api/functionDB/"
 
     # Messaggio di benvenuto
 
