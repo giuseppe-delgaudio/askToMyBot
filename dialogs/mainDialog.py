@@ -16,6 +16,7 @@ from botbuilder.core import (
     UserState,
     CardFactory
 )
+from config import DefaultConfig
 from botbuilder.schema import (
     ActionTypes,
     Attachment,
@@ -88,6 +89,13 @@ class MainDialog(ComponentDialog):
         elif result == "Visualizza e controlla salvataggi" : 
             
             return await step_context.begin_dialog("ManageResultDialog")
+
+        elif result == "Aiuto" :
+
+            await step_context.context.send_activity(MessageFactory.attachment(CardFactory.hero_card(HeroCard(
+                text=DefaultConfig.WELCOME_MESSAGE
+            ))))
+            return await step_context.next(result=None)
 
         else :
             await step_context.context.send_activity( MessageFactory.text("Nessuna delle scelte è corretta riprova") )

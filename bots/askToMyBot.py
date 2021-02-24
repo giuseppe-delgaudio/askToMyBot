@@ -1,7 +1,8 @@
-from botbuilder.core import ActivityHandler, ConversationState, TurnContext, UserState
+from botbuilder.core import ActivityHandler, ConversationState, TurnContext, UserState , MessageFactory , CardFactory
 from botbuilder.dialogs import Dialog
 from helpers.dialog_helper import DialogHelper
-
+from botbuilder.schema import ChannelAccount , HeroCard
+from config import DefaultConfig
 
 class AskToMyBot(ActivityHandler):
     def __init__(
@@ -29,3 +30,10 @@ class AskToMyBot(ActivityHandler):
             turn_context,
             self.conversation_state.create_property("DialogState"),
         )
+    
+    async def on_members_added_activity(
+        self, members_added: [ChannelAccount], turn_context: TurnContext
+    ):
+         await turn_context.send_activity(MessageFactory.attachment(CardFactory.hero_card(HeroCard(
+                text=DefaultConfig.WELCOME_MESSAGE
+            ))))

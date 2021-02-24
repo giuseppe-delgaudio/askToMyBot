@@ -141,6 +141,10 @@ class ShowSaveResultDialog(ComponentDialog):
 
             del messageList[int(toDelete)-1]
             step_context.values["messages"] = messageList
+
+            if len(messageList) == 0 :
+                return await step_context.end_dialog(result=messageList)
+
             return await step_context.prompt(ConfirmPrompt.__name__ , PromptOptions(
                 prompt=MessageFactory.text("Vuoi eliminare altri risultati ?"),
                 retry_prompt=MessageFactory.text("Inserisci un risultato valido")
@@ -177,6 +181,7 @@ class ShowSaveResultDialog(ComponentDialog):
         for message in messages :
             msg =message["message"]
             date= message["date"]
-            text+=f"{i+1}:\n{msg}\nin data {date}\n\n"
+            arrow = "\U000027A1"
+            text+=f"{i+1} {arrow} : \n {msg}\nin data {date}\n\n"
             i+=1
         return text

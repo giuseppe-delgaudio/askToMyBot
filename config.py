@@ -27,5 +27,17 @@ class DefaultConfig:
 
 
     # Parametri FunctionURL
+    
+    BASE_FUNCTION_URL = "https://asktomybot-functiondb.azurewebsites.net/api/functionDB/"
 
-    BASE_FUNCTION_URL = "http://localhost:7071/api/functionDB/"
+    # Messaggio di benvenuto
+
+    WELCOME_MESSAGE = """Benvenuto in AskToMyBot \U0001F604 \ncon questo bot potrai ottenere :
+    \n\U0001F534 una valutazione del tuo viso con età ed altre informazioni \U0001F466 
+    \n\U0001F534 una comparazione tra il tuo viso ed un altro, caricato da te oppure cercato sul web \U0001F468 \U0001F469
+    \n\U0001F534 comparare il tuo volto con diversi gruppi di VIP ottenendo il VIP più somigliante \U0001F468 \U0001F31F 
+    \n\U0001F534 potrai gestire e visualizzare tutti i risultati salvati \U0001F4BE
+    \n\U0001F4CC ricorda nel rispetto della tua privacy nessun tuo dato personale, comprese le immagini, sarà salvato.\n\n
+    \U0001F3BA Buon Divertimento \U0001F3BA 
+    \n Invia un qualsiasi messaggio per iniziare"""
+
