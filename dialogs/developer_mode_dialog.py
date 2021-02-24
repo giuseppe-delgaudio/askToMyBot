@@ -22,7 +22,8 @@ from botbuilder.schema import (
     CardImage
     
 )
-import requests
+from helpers.adaptiveCardHelper import replace
+import requests , os , json
 from io import BytesIO
 class DeveloperModeDialog(ComponentDialog):
 
@@ -237,6 +238,26 @@ class DeveloperModeDialog(ComponentDialog):
             await step_context.context.send_activity("Mi dispiace nessuna corrispondenza prova ad usare altre parole")
             return step_context.replace_dialog( WaterfallDialog.__name__+"WebSearch" )
         
+        data : dict = dict()
+        i = 0
+        for url in list_search :
+            index = f"img_{i+1}"
+            data[index] = url 
+            i+=1
+        data["nameCard"] = "Seleziona una scelta"
+
+        with open( os.path.join(os.getcwd(), "templates/showImageCard.json" ) , "rb") as in_file:
+            cardData  = json.load(in_file)
+
+        #sostituisco elementi nel template 
+        cardData = await replace(cardData , data)
+        
+        #carico risulati ricerca nel contesto
+        step_context.values["searchImages"] = list_search
+        
+        await step_context.context.send_activity(MessageFactory.attachment(CardFactory.adaptive_card(cardData)))
+        
+        """
         #Mostro risultati ricerca
         reply = MessageFactory.list([])
         reply.attachment_layout = AttachmentLayoutTypes.carousel
@@ -247,6 +268,8 @@ class DeveloperModeDialog(ComponentDialog):
         
         await step_context.context.send_activity(reply)
         #carico risulati ricerca nel contesto
+        """
+        
         step_context.values["searchImages"] = list_search
 
 

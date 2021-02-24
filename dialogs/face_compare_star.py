@@ -12,6 +12,7 @@ from botbuilder.core import (
     MessageFactory, 
     CardFactory
 )
+from helpers.save_method import saveMessage
 from azure.cognitiveservices.vision.face.models import PersonGroup , Person
 from botbuilder.schema import (
     ActionTypes,
@@ -22,8 +23,9 @@ from botbuilder.schema import (
     CardImage
     
 )
-import requests
-from io import BytesIO
+from helpers.adaptiveCardHelper import replace
+import requests , os , json
+from io import BytesIO 
 
 class FaceCompareStar(ComponentDialog):
 
@@ -114,19 +116,34 @@ class FaceCompareStar(ComponentDialog):
             confidence = result[0] * 100
             person : Person = result[1]
             starImage = self.search.searchImage(searchParam=person.name)
-
+            text1 = f" Il tuo viso ha una somiglianza del {round(confidence,2)} % con {person.name} Complimenti"
             
+            data : dict = dict()
+
+            data["result"] = text1
+            data["image_1"] = image.content_url
+            data["image_2"] = starImage[0]
+
+            with open( os.path.join(os.getcwd(), "templates/showResultCard.json" ) , "rb") as in_file:
+                cardData  = json.load(in_file)
+
+            #sostituisco elementi nel template 
+            cardData = await replace(cardData , data)
+            
+            await step_context.context.send_activity(MessageFactory.attachment(CardFactory.adaptive_card(cardData)))
+
+            """
             card = HeroCard(
                 title="Il tuo risultato",
                 images = [
                     CardImage(url = image.content_url),
                     CardImage(url = starImage[0])
                 ],
-                text=f" Il tuo viso ha una somiglianza del {round(confidence,2)} % con {person.name}\n Complimenti"
+                text=text1
             )
 
             await step_context.context.send_activity(MessageFactory.attachment(CardFactory.hero_card(card)))
-            
+            """
             
         else : 
             
@@ -135,7 +152,7 @@ class FaceCompareStar(ComponentDialog):
             
             
             
-        
+        step_context.values["textAnalysis"] = text1
         return await step_context.prompt(
             ConfirmPrompt.__name__,
             PromptOptions( prompt=MessageFactory.text("Vuoi salvare il risultato ?"), style=ListStyle.hero_card  )
@@ -145,7 +162,16 @@ class FaceCompareStar(ComponentDialog):
 
         if step_context.result:
             
-            await step_context.context.send_activity(MessageFactory.text("Ora dovrei salvare"))
+            text = step_context.values["textAnalysis"]
+
+            userId = step_context.context.activity.from_property.id
+            userChannel = step_context.context.activity.channel_id
+            res = await saveMessage(userId , userChannel , text )
+            
+            if res : 
+                await step_context.context.send_activity(MessageFactory.text("Salvato"))
+            else: 
+                await step_context.context.send_activity(MessageFactory.text("Problemi nel salvataggio"))
 
         else:
             

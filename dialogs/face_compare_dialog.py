@@ -22,7 +22,8 @@ from botbuilder.dialogs.prompts import (
     PromptOptions,
     PromptValidatorContext,
 )
-
+from helpers.save_method import saveMessage
+from helpers.adaptiveCardHelper import replace
 from botbuilder.dialogs.choices import Choice , ListStyle
 from botbuilder.core import MessageFactory, UserState , CardFactory
 from helpers.face_cognitive import FaceCognitive
@@ -30,6 +31,7 @@ from helpers.image_search import Image_Search
 from data_models import UserProfile
 from azure.cognitiveservices.vision.face.models import * 
 from PIL import Image
+import os , json
 from io import BytesIO
 import requests 
 
@@ -162,7 +164,6 @@ class FaceCompareDialog(ComponentDialog):
             
             return await step_context.begin_dialog(WaterfallDialog.__name__+"2upload")
 
-
     # step per elaborazini immagini
     async def elabStep(self,step_context: WaterfallStepContext ) -> DialogTurnResult:
     ## Risposta affermativa step precedente 
@@ -197,27 +198,55 @@ class FaceCompareDialog(ComponentDialog):
             else : 
                 text= "Non ho individuato nessuna somiglianza"
 
+            text1 = f"Il tuo grado di somiglianza è {round(confidence,2)}% {text}"
+            
+            data : dict = dict()
+
+            data["result"] = text1
+            data["image_1"] = image1.content_url
+            data["image_2"] = image2
+
+            with open( os.path.join(os.getcwd(), "templates/showResultCard.json" ) , "rb") as in_file:
+                cardData  = json.load(in_file)
+
+            #sostituisco elementi nel template 
+            cardData = await replace(cardData , data)
+            
+            await step_context.context.send_activity(MessageFactory.attachment(CardFactory.adaptive_card(cardData)))
+
+            """
             card = HeroCard(
                 title="Il tuo risultato",
                 images = [
                     CardImage(url =image1.content_url),
                     CardImage(url=image2)
                 ],
-                text= f"Il tuo grado di somiglianza è {round(confidence,2)}\n {text}"
+                text=text1 
             )
-
+            
             await step_context.context.send_activity(MessageFactory.attachment(CardFactory.hero_card(card)))
+
+            """
+            step_context.values["textAnalysis"] = text1
             return await step_context.prompt(
             ConfirmPrompt.__name__+"Save",
             PromptOptions( prompt=MessageFactory.text("Vuoi salvare il risultato ?"), style=ListStyle.hero_card  )
         )
         
-
     async def saveStep(self,step_context: WaterfallStepContext ) -> DialogTurnResult:
 
         if step_context.result:
             
-            await step_context.context.send_activity(MessageFactory.text("Ora dovrei salvare"))
+            text = step_context.values["textAnalysis"]
+
+            userId = step_context.context.activity.from_property.id
+            userChannel = step_context.context.activity.channel_id
+            res = await saveMessage(userId , userChannel , text )
+            
+            if res : 
+                await step_context.context.send_activity(MessageFactory.text("Salvato"))
+            else: 
+                await step_context.context.send_activity(MessageFactory.text("Problemi nel salvataggio"))
 
         else:
             
@@ -225,7 +254,6 @@ class FaceCompareDialog(ComponentDialog):
             
         
         return await step_context.end_dialog()
-
 
     async def image_2_upload_step( self , step_context : WaterfallStepContext ) -> DialogTurnResult : 
         
@@ -272,7 +300,6 @@ class FaceCompareDialog(ComponentDialog):
             await step_context.context.send_activity(MessageFactory.text("Ti riporto all upload, premi /fine per terminare"))
             return await step_context.replace_dialog( WaterfallDialog.__name__+"2upload" )
 
-
     @staticmethod
     async def picture_prompt_validator(prompt_context: PromptValidatorContext) -> bool:
         if not prompt_context.recognized.succeeded:
@@ -313,7 +340,7 @@ class FaceCompareDialog(ComponentDialog):
         if len(list_search) == 0 :
             await step_context.context.send_activity("Mi dispiace nessuna corrispondenza prova ad usare altre parole")
             return step_context.replace_dialog( WaterfallDialog.__name__+"Search" )
-        
+        '''
         #Mostro risultati ricerca
         reply = MessageFactory.list([])
         reply.attachment_layout = AttachmentLayoutTypes.carousel
@@ -323,9 +350,27 @@ class FaceCompareDialog(ComponentDialog):
         
         
         await step_context.context.send_activity(reply)
+        '''
+
+        #preparo risultati  immagini 
+        data : dict = dict()
+        i = 0
+        for url in list_search :
+            index = f"img_{i+1}"
+            data[index] = url 
+            i+=1
+        data["nameCard"] = "Seleziona una scelta"
+
+        with open( os.path.join(os.getcwd(), "templates/showImageCard.json" ) , "rb") as in_file:
+            cardData  = json.load(in_file)
+
+        #sostituisco elementi nel template 
+        cardData = await replace(cardData , data)
+        
         #carico risulati ricerca nel contesto
         step_context.values["searchImages"] = list_search
-
+        
+        await step_context.context.send_activity(MessageFactory.attachment(CardFactory.adaptive_card(cardData)))
 
         return await step_context.prompt(
             ChoicePrompt.__name__+"ChoiceSearch",

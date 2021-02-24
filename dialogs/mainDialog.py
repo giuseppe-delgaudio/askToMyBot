@@ -5,6 +5,7 @@ from botbuilder.dialogs import (
     DialogTurnResult,
 )
 from dialogs.face_compare_star import FaceCompareStar
+from dialogs.show_save_result_dialog import ShowSaveResultDialog
 from dialogs.developer_mode_dialog import DeveloperModeDialog
 from dialogs.face_compare_dialog import FaceCompareDialog
 from dialogs.face_analysis_dialog import FaceAnalysisDialog
@@ -34,12 +35,13 @@ class MainDialog(ComponentDialog):
         )
         self.add_dialog( FaceAnalysisDialog( "FaceAnalysisDialog" , self.user_state) )
         self.add_dialog( FaceCompareDialog( "FaceCompareDialog" , self.user_state ) )
+        self.add_dialog( ShowSaveResultDialog("ManageResultDialog"))
         self.add_dialog( FaceCompareStar("FaceCompareStarDialog"))
         self.add_dialog( DeveloperModeDialog("DeveloperDialog" ))
         self.add_dialog(ChoicePrompt( "MainPrompt" ))
         self.add_dialog(
             WaterfallDialog(
-                "Waterfall_main", [ self.choice_step , self.execute_step ] ,
+                "Waterfall_main", [ self.choice_step , self.execute_step , self.loop_main_step ] ,
             ),
         
         )
@@ -83,46 +85,27 @@ class MainDialog(ComponentDialog):
 
             return await step_context.begin_dialog("FaceCompareStarDialog")
 
+        elif result == "Visualizza e controlla salvataggi" : 
+            
+            return await step_context.begin_dialog("ManageResultDialog")
+
         else :
             await step_context.context.send_activity( MessageFactory.text("Nessuna delle scelte è corretta riprova") )
             return await step_context.replace_dialog("Waterfall_main") 
 
-        return await step_context.end_dialog()
 
-    def cardChoice(self) -> Attachment :
-        card = HeroCard(
-            title="Seleziona l'azione da eseguire",
-            buttons=[
-                CardAction(
-                    type=ActionTypes.im_back,
-                    title="Analizza il tuo volto",
-                    value="/mioVolto"
-                ),
-                CardAction(
-                    type=ActionTypes.im_back,
-                    title="Compara due volti",
-                    value="/comparaVolti"
-                ),
-                CardAction(
-                    type=ActionTypes.im_back,
-                    title="Compara volto con le star",
-                    value="/comparaStar"
-                ),
-                CardAction(
-                    type=ActionTypes.im_back,
-                    title="Aiuto",
-                    value="/aiuto"
-                )
-            ],
-        )
-        return CardFactory.hero_card(card)
-    
+    async def loop_main_step(self, step_context : WaterfallStepContext) : 
+
+        return await step_context.replace_dialog("Waterfall_main") 
+
+
     
     def get_options(self):
         options = [
             Choice(value="Analizza il tuo volto",synonyms=["/analisiVolto"]),
             Choice(value="Confronta due visi",synonyms=["/confrontoVisi"]),
             Choice(value="Confronta volto con le star" , synonyms=["/confrontoStar"]),
+            Choice(value="Visualizza e controlla salvataggi", synonyms=["/salvataggi"]),
             Choice(value="Aiuto",synonyms=["/aiuto"]),
         ]
         return options

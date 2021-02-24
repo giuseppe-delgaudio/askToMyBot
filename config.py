@@ -11,10 +11,10 @@ class DefaultConfig:
     """ Bot Configuration """
 
     PORT = 3978
-    #APP_ID = os.environ.get("MicrosoftAppId", "bc48ebee-f228-474b-856d-e1003ddf9be3")
-    #APP_PASSWORD = os.environ.get("MicrosoftAppPassword", "VIXj8A6eL-F2OpVa376dBO5.w4oj_8j6f-")
-    APP_ID = os.environ.get("MicrosoftAppId", "")
-    APP_PASSWORD = os.environ.get("MicrosoftAppPassword", "")
+    APP_ID = os.environ.get("MicrosoftAppId", "51bd055d-b570-4266-bef7-8920cf7a9708")
+    APP_PASSWORD = os.environ.get("MicrosoftAppPassword", "OT~P8yU59xr~L~sado2A_.RFREr3aA155q")
+    #APP_ID = os.environ.get("MicrosoftAppId","")
+    #APP_PASSWORD = os.environ.get("MicrosoftAppPassword","")
     ## Parametri Cognitive Viso ##
 
     ENDPOINT = "https://faceapiaskbot.cognitiveservices.azure.com/"
@@ -24,3 +24,8 @@ class DefaultConfig:
 
     ENDPOINT_SEARCH = "https://api.bing.microsoft.com/v7.0/images/search"
     KEYSEARCH ="f09d64c900704318b5f733a4182d0e44"
+
+
+    # Parametri FunctionURL
+
+    BASE_FUNCTION_URL = "http://localhost:7071/api/functionDB/"

@@ -29,6 +29,7 @@ from azure.cognitiveservices.vision.face.models import *
 from PIL import Image
 from io import BytesIO
 import requests 
+from helpers.save_method import saveMessage
 
 class FaceAnalysisDialog(ComponentDialog):
     def __init__(self, dialog_id: str , user_state : UserState):
@@ -79,6 +80,7 @@ class FaceAnalysisDialog(ComponentDialog):
         #memorizzo l'immagine del turno precedente 
         step_context.values["image"] = step_context.result[0]
         image = step_context.values["image"]
+        #print(step_context.context.activity.from_property.id)
         await step_context.context.send_activity(
             MessageFactory.attachment(
                 
@@ -117,14 +119,16 @@ class FaceAnalysisDialog(ComponentDialog):
             # Viso rilevato ora preparo la scheda da mostrare
             else : 
                 
+                textAnalysis = await FaceAnalysisDialog.textImage(result.face_attributes)
+
                 card = HeroCard(
                     title="Il tuo risultato",
                     images = [
                         CardImage(url = image.content_url)
                     ],
-                    text= await FaceAnalysisDialog.textImage(result.face_attributes)
+                    text=textAnalysis
                 )
-
+                step_context.values["textAnalysis"] = textAnalysis
                 await step_context.context.send_activity(MessageFactory.attachment(CardFactory.hero_card(card)))
             
 
@@ -143,8 +147,17 @@ class FaceAnalysisDialog(ComponentDialog):
     async def saveStep(self,step_context: WaterfallStepContext ) -> DialogTurnResult:
 
         if step_context.result:
+
+            text = step_context.values["textAnalysis"]
+
+            userId = step_context.context.activity.from_property.id
+            userChannel = step_context.context.activity.channel_id
+            res = await saveMessage(userId , userChannel , text )
             
-            await step_context.context.send_activity(MessageFactory.text("Ora dovrei salvare"))
+            if res : 
+                await step_context.context.send_activity(MessageFactory.text("Salvato"))
+            else: 
+                await step_context.context.send_activity(MessageFactory.text("Problemi nel salvataggio"))
 
         else:
             
