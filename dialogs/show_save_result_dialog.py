@@ -10,8 +10,7 @@ from botbuilder.schema import (
     HeroCard,
     CardAction,
     CardImage,
-    AttachmentLayoutTypes
-    
+    AttachmentLayoutTypes   
 )
 from botbuilder.dialogs.prompts import (
     TextPrompt,
@@ -27,7 +26,6 @@ from botbuilder.dialogs.choices import Choice , ListStyle
 from botbuilder.core import MessageFactory, UserState , CardFactory
 from helpers.face_cognitive import FaceCognitive
 from helpers.image_search import Image_Search
-from data_models import UserProfile
 from azure.cognitiveservices.vision.face.models import * 
 from PIL import Image
 from io import BytesIO
@@ -42,6 +40,7 @@ class ShowSaveResultDialog(ComponentDialog):
         self.add_dialog( ConfirmPrompt(ConfirmPrompt.__name__ ))
         self.add_dialog( ChoicePrompt( ChoicePrompt.__name__ ))
 
+        #Dialog main per visualizzazione e salvataggio lista aggiornata messages 
         self.add_dialog(
             WaterfallDialog(
                 WaterfallDialog.__name__+"SaveMain", 
@@ -54,6 +53,7 @@ class ShowSaveResultDialog(ComponentDialog):
             )
         )
 
+        #Dialog loop per rimozione message
         self.add_dialog(
             WaterfallDialog(
                 WaterfallDialog.__name__+"DeleteLoop",
@@ -68,8 +68,8 @@ class ShowSaveResultDialog(ComponentDialog):
         )
 
         self.initial_dialog_id = WaterfallDialog.__name__+"SaveMain"
-    
-    
+
+    #Mostro messaggi salvati
     async def showSaveResult_step(self,step_context : WaterfallStepContext ) :
         
         userId = step_context.context.activity.from_property.id
@@ -106,7 +106,9 @@ class ShowSaveResultDialog(ComponentDialog):
             
             await step_context.context.send_activity("Va bene torno al menu")
             return await step_context.end_dialog()
-  
+
+
+    #Ricevo lista aggiornata da options del dialog che ha lanciato
     async def beginLoopDelete_step(self,step_context : WaterfallStepContext ) :
         
         messageList = step_context.options
@@ -138,7 +140,7 @@ class ShowSaveResultDialog(ComponentDialog):
             return await step_context.end_dialog(result=messageList)
 
         else : 
-
+            #Rimuovo da lista
             del messageList[int(toDelete)-1]
             step_context.values["messages"] = messageList
 
@@ -160,6 +162,8 @@ class ShowSaveResultDialog(ComponentDialog):
             
             return await step_context.end_dialog(result = step_context.values["messages"])
 
+
+    #Ricevo da LoopStep lista aggiornata e salvo
     async def endSave_step( self , step_context : WaterfallStepContext ) : 
 
         messageList : list = step_context.result
@@ -173,7 +177,6 @@ class ShowSaveResultDialog(ComponentDialog):
 
         return await step_context.end_dialog()
 
-    
     @staticmethod
     def generateText( messages : list  ) -> str :
         i = 0

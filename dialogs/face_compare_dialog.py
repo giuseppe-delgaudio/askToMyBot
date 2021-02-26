@@ -28,7 +28,6 @@ from botbuilder.dialogs.choices import Choice , ListStyle
 from botbuilder.core import MessageFactory, UserState , CardFactory
 from helpers.face_cognitive import FaceCognitive
 from helpers.image_search import Image_Search
-from data_models import UserProfile
 from azure.cognitiveservices.vision.face.models import * 
 from PIL import Image
 import os , json
@@ -36,7 +35,7 @@ from io import BytesIO
 import requests 
 
 class FaceCompareDialog(ComponentDialog):
-    def __init__(self, dialog_id: str , user_state : UserState):
+    def __init__(self, dialog_id: str ):
         super(FaceCompareDialog, self).__init__(
             dialog_id 
         )
@@ -322,7 +321,6 @@ class FaceCompareDialog(ComponentDialog):
 
         # If none of the attachments are valid images, the retry prompt should be sent.
         return len(valid_images) > 0
-
     
     async def search_step(self , step_context : WaterfallStepContext ) -> DialogTurnResult :
 
@@ -391,7 +389,6 @@ class FaceCompareDialog(ComponentDialog):
         #termino dialogo con il risultato selezionato 
         
         return await step_context.end_dialog(images[int(choice)-1])
-
 
     @staticmethod
     def generateHeroCardPhoto( url_send , choice ) -> Attachment :

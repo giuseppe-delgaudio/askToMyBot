@@ -1,7 +1,3 @@
-#!/usr/bin/env python3
-# Copyright (c) Microsoft Corporation. All rights reserved.
-# Licensed under the MIT License.
-
 import os
 
 """ Bot Configuration """
@@ -13,8 +9,7 @@ class DefaultConfig:
     PORT = 3978
     APP_ID = os.environ.get("MicrosoftAppId", "51bd055d-b570-4266-bef7-8920cf7a9708")
     APP_PASSWORD = os.environ.get("MicrosoftAppPassword", "OT~P8yU59xr~L~sado2A_.RFREr3aA155q")
-    #APP_ID = os.environ.get("MicrosoftAppId","")
-    #APP_PASSWORD = os.environ.get("MicrosoftAppPassword","")
+   
     ## Parametri Cognitive Viso ##
 
     ENDPOINT = "https://faceapiaskbot.cognitiveservices.azure.com/"

@@ -24,7 +24,6 @@ from botbuilder.dialogs.prompts import (
 from botbuilder.dialogs.choices import Choice , ListStyle
 from botbuilder.core import MessageFactory, UserState , CardFactory
 from helpers.face_cognitive import FaceCognitive
-from data_models import UserProfile
 from azure.cognitiveservices.vision.face.models import * 
 from PIL import Image
 from io import BytesIO
@@ -32,7 +31,7 @@ import requests
 from helpers.save_method import saveMessage
 
 class FaceAnalysisDialog(ComponentDialog):
-    def __init__(self, dialog_id: str , user_state : UserState):
+    def __init__(self, dialog_id: str  ):
         super(FaceAnalysisDialog, self).__init__(
             dialog_id 
         )
@@ -68,7 +67,7 @@ class FaceAnalysisDialog(ComponentDialog):
 
         prompt_image = PromptOptions(
             prompt=MessageFactory.text(
-                "Per ottenere un analisi carica una tua foto"
+                "Per ottenere un analisi carica una foto"
                 ),
             retry_prompt=MessageFactory.text(
                 "Carica una foto corretta oppure /fine"

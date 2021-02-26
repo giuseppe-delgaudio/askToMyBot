@@ -27,15 +27,12 @@ from botbuilder.schema import (
 
 class MainDialog(ComponentDialog):
 
-    def __init__(self , user_state : UserState):
+    def __init__(self ):
         
         super(MainDialog , self).__init__(MainDialog.__name__)
         
-        self.user_state = user_state.create_property(
-            "UserState"
-        )
-        self.add_dialog( FaceAnalysisDialog( "FaceAnalysisDialog" , self.user_state) )
-        self.add_dialog( FaceCompareDialog( "FaceCompareDialog" , self.user_state ) )
+        self.add_dialog( FaceAnalysisDialog( "FaceAnalysisDialog" ) )
+        self.add_dialog( FaceCompareDialog( "FaceCompareDialog" ) )
         self.add_dialog( ShowSaveResultDialog("ManageResultDialog"))
         self.add_dialog( FaceCompareStar("FaceCompareStarDialog"))
         self.add_dialog( DeveloperModeDialog("DeveloperDialog" ))
@@ -49,13 +46,13 @@ class MainDialog(ComponentDialog):
         self.initial_dialog_id = "Waterfall_main"
     
     async def choice_step(self , step_context: WaterfallStepContext):
-
+        #Avvio developerMode
         input = step_context.context.activity.text
         if input is not None :
             if input == "developerMode" :
                 await step_context.end_dialog()
                 return await step_context.begin_dialog("DeveloperDialog")
-
+        #Avvio prompt con options
         return await step_context.prompt(
             "MainPrompt",
             PromptOptions(
@@ -71,7 +68,7 @@ class MainDialog(ComponentDialog):
         )
 
     async def execute_step( self , step_context : WaterfallStepContext ):
-
+        #controllo choice ed avvio dialogo corretto
         result = step_context.result.value
         await step_context.context.send_activity(MessageFactory.text(result))
 
@@ -101,14 +98,13 @@ class MainDialog(ComponentDialog):
             await step_context.context.send_activity( MessageFactory.text("Nessuna delle scelte è corretta riprova") )
             return await step_context.replace_dialog("Waterfall_main") 
 
-
+    #Loop per ritorno da qualsiasi dialog
     async def loop_main_step(self, step_context : WaterfallStepContext) : 
 
         return await step_context.replace_dialog("Waterfall_main") 
 
-
-    
-    def get_options(self):
+    @staticmethod
+    def get_options():
         options = [
             Choice(value="Analizza il tuo volto",synonyms=["/analisiVolto"]),
             Choice(value="Confronta due visi",synonyms=["/confrontoVisi"]),

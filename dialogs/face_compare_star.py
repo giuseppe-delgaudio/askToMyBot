@@ -33,10 +33,11 @@ class FaceCompareStar(ComponentDialog):
         super(FaceCompareStar , self ).__init__(
             dialog_id
         )
-
+        #Inizializzo congitive e Bing Image Search
         self.cognitive = FaceCognitive()
         self.search = Image_Search()
 
+        #Main dialog per upload foto e check con group 
         self.add_dialog(
             WaterfallDialog(
                 WaterfallDialog.__name__+"FaceCompareStar",[
@@ -62,8 +63,9 @@ class FaceCompareStar(ComponentDialog):
         #dialogo iniziale 
         self.initial_dialog_id = WaterfallDialog.__name__+"FaceCompareStar"  
     
+   
     async def imageUploadStep( self , step_context : WaterfallStepContext ) -> DialogTurnResult:
-
+        #Prompt upload image
         prompt_image = PromptOptions(
             prompt=MessageFactory.text(
                 "Per ottenere un analisi carica una tua foto"
@@ -73,20 +75,20 @@ class FaceCompareStar(ComponentDialog):
                 ),
         )
         return await step_context.prompt( AttachmentPrompt.__name__ , prompt_image )
-
+  
     async def choiceGroup_step(self, step_context : WaterfallStepContext ):
             
             step_context.values["image"] = step_context.result[0]
-
+            #Recupera lista gruppi 
             groups : list = await self.cognitive.getGroupPerson()
 
             if groups is None :
-                
+                #Nessuna categoria
                 await step_context.context.send_activity("Sembra non ci sia nessuna categoria, mi dispiace")
                 return await step_context.end_dialog()
             
             else :
-            
+                #Prompt choice group
                 return await step_context.prompt(ChoicePrompt.__name__ , PromptOptions(
                         prompt=MessageFactory.text("Seleziona la categoria"),
                         retry_prompt=MessageFactory.text("La selezione non è valida riprova"),
@@ -110,9 +112,9 @@ class FaceCompareStar(ComponentDialog):
         
         result : list = await self.cognitive.identifyPerson( BytesIO(res.content) , personGroup )
 
-        # Nessun viso rilevato riporto al caricamento
+
         if result is not None and len(result) == 2 :
-            # Viso rilevato ora preparo la scheda da mostrare
+            # Viso rilevato ora preparo la scheda da mostrare -> result[0] contiene confidence - result[1] person object target
             confidence = result[0] * 100
             person : Person = result[1]
             starImage = self.search.searchImage(searchParam=person.name)
@@ -129,27 +131,14 @@ class FaceCompareStar(ComponentDialog):
 
             #sostituisco elementi nel template 
             cardData = await replace(cardData , data)
-            
+            #costruisco adaptive card
             await step_context.context.send_activity(MessageFactory.attachment(CardFactory.adaptive_card(cardData)))
 
-            """
-            card = HeroCard(
-                title="Il tuo risultato",
-                images = [
-                    CardImage(url = image.content_url),
-                    CardImage(url = starImage[0])
-                ],
-                text=text1
-            )
 
-            await step_context.context.send_activity(MessageFactory.attachment(CardFactory.hero_card(card)))
-            """
-            
         else : 
-            
+            #Non ho individuato nessun viso nell immagine caricata
             await step_context.context.send_activity(MessageFactory.text("Sembra che la foto non contenga visi oppure non sono riuscito a trovare una corssipondenza adeguata prova a ricaricare la foto oppure premi /fine per terminare"))
             return await step_context.replace_dialog( WaterfallDialog.__name__+"FaceCompareStar" )
-            
             
             
         step_context.values["textAnalysis"] = text1

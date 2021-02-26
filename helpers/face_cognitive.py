@@ -12,11 +12,12 @@ import requests
 class FaceCognitive():
 
     def __init__(self) : 
-        
+        #inizializzo face client con key  
         self.face_client = FaceClient( DefaultConfig.ENDPOINT , CognitiveServicesCredentials(DefaultConfig.KEYFACE)  )
 
+     
     async def faceAnalysis(self , image : BytesIO , mode : str = None ) -> DetectedFace :
-        
+        #se non presente viene effettuata analisi approfondita   
         if mode != "onlyId" :
         
             self.detected_face = self.face_client.face.detect_with_stream(
@@ -32,6 +33,7 @@ class FaceCognitive():
                 recognition_model="recognition_03"
 
             )
+        #viene restiututio solo id per successive analisi
         else : 
             self.detected_face = self.face_client.face.detect_with_stream(image , recognition_model="recognition_03")
     
@@ -39,11 +41,11 @@ class FaceCognitive():
 
             return None
         else : 
-            
+            #return primo viso disponibile
             return self.detected_face[0]
 
     async def faceCompare( self , image1 : BytesIO , image2 : BytesIO ) -> VerifyResult :
-
+        #compare tra due visi da cui recupero l'id per il confronto
         self.face1 : DetectedFace =  await self.faceAnalysis(image1 , "b")
         self.face2 : DetectedFace =  await self.faceAnalysis(image2 , "b")
 

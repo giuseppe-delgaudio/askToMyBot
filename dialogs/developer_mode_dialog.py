@@ -19,12 +19,12 @@ from botbuilder.schema import (
     HeroCard,
     CardAction,
     AttachmentLayoutTypes,
-    CardImage
-    
+    CardImage 
 )
 from helpers.adaptiveCardHelper import replace
 import requests , os , json
 from io import BytesIO
+
 class DeveloperModeDialog(ComponentDialog):
 
     def __init__(self, dialog_id : str ):
@@ -113,7 +113,7 @@ class DeveloperModeDialog(ComponentDialog):
         
         self.initial_dialog_id = WaterfallDialog.__name__+"DeveloperMain"
 
-    
+## Main dialog -----------
     async def choice_step(self, step_context : WaterfallStepContext ):
         return await step_context.prompt(
             ChoicePrompt.__name__+"MainDev",
@@ -161,7 +161,11 @@ class DeveloperModeDialog(ComponentDialog):
     async def mainLoop_step(self, step_context: WaterfallStepContext ):
         # Ciclo per main prompt
         return await step_context.replace_dialog( WaterfallDialog.__name__+"DeveloperMain")
+#-------------------------
 
+
+
+## Metodi creazione group-
     async def nameGroupPrompt(self , step_context : WaterfallStepContext) :
 
         return await step_context.prompt(
@@ -186,7 +190,112 @@ class DeveloperModeDialog(ComponentDialog):
             
             await step_context.context.send_activity("Qualche problema durante la creazione riprova")
             return await step_context.replace_dialog(WaterfallDialog.__name__+"CreateGroup")
+## --END CREAZIONE GROUP--
+
+
+##Inizio DIALOG PERSON-------------------
+    async def namePersonPrompt(self , step_context : WaterfallStepContext) :
+
+        return await step_context.prompt(
+            TextPrompt.__name__ ,
+            PromptOptions(
+                prompt=MessageFactory.text("Inserisci il nome della persona da inserire"),
+                retry_prompt=MessageFactory.text("Prova a reinserire un valore corretto")
+            )
+        )
+
+    async def personGroupPrompt(self, step_context : WaterfallStepContext): 
+        result = step_context.result
+        step_context.values["personName"] = result
+        groups : list = await self.cognitive.getGroupPerson()
         
+        # Mostra se diponibili i group disponibili
+        if groups is None :
+            await step_context.context.send_activity("Sembra non ci sia nessun gruppo creane prima uno")
+            return await step_context.end_dialog()
+        else :
+
+            return await step_context.prompt(ChoicePrompt.__name__ , PromptOptions(
+                prompt=MessageFactory.text("Seleziona il group dove inserire la person"),
+                retry_prompt=MessageFactory.text("La selezione non è valida riprova"),
+                choices=DeveloperModeDialog.getGroupListChoice( groups ),
+                style=ListStyle.hero_card
+            ))
+    
+    async def savePersonPrompt(self , step_context : WaterfallStepContext ) : 
+        #ottengo group
+        groupId = step_context.result.value
+        personName = step_context.values["personName"]
+        #salvo person
+        person_id = await self.cognitive.createPerson(personGroupName=groupId , personName=personName)
+        
+        #Non è stato possibile creare la person 
+        if person_id is None : 
+            await step_context.context.send_activity("Qualcosa è andato storto prova a reinserire i dati")
+            return await step_context.replace_dialog(WaterfallDialog.__name__+"CreatePerson")
+        
+        else : 
+            #salvo nel contesto dati per caricare foto person ed inizio Photo Loop
+            step_context.values["groupId"] = groupId
+            step_context.values["personId"]= person_id
+            return await step_context.begin_dialog( WaterfallDialog.__name__+"PhotoLoop" )
+
+#Inizio loop per inserimento immagini person 
+    async def beginLoop_step(self, step_context : WaterfallStepContext ) :
+        #Carico immagini se presenti da options --> proveniente da Replace Dialog
+        step_context.values["images"] = step_context.options
+        
+
+        return await step_context.prompt(
+                ChoicePrompt.__name__ , PromptOptions(
+                    prompt=MessageFactory.text("Come vuoi caricare le foto"),
+                    retry_prompt=MessageFactory.text("Seleziona un opzione valida"),
+                    choices=[
+                        Choice(value = "Web") ,
+                        Choice(value="Upload")
+                    ],
+                    style=ListStyle.hero_card
+                )
+            )
+
+    async def choiceUploadPhoto(self , step_context : WaterfallStepContext ) : 
+        
+        result = step_context.result.value
+
+        if result == "Web":
+            #Avvio dialogo con ricerca web passando come options le immagini aggiunte fino ad ora
+            return await step_context.begin_dialog(
+                WaterfallDialog.__name__+"SearchPhoto" , 
+                step_context.values["images"] )
+        else :
+            #Avvio dialogo con upload passando come options le immagini aggiunte fino ad ora
+            return await step_context.begin_dialog(
+                WaterfallDialog.__name__+"UploadPhoto" , 
+                step_context.values["images"] )
+
+    async def choicePhotoLoop(self, step_context : WaterfallStepContext) : 
+
+        images = step_context.result
+        step_context.values["images"] = images
+
+        return await step_context.prompt(
+            ConfirmPrompt.__name__ , PromptOptions(
+                prompt=MessageFactory.text("Vuoi caricare altre foto ?")
+            )
+        )
+    
+    async def eval_choicePhotoLoop(self, step_context : WaterfallStepContext) :
+        #lista url immagini return da step di upload oppure ricerca
+        result = step_context.result
+        images = step_context.values["images"]
+
+        if result : 
+            return await step_context.replace_dialog(WaterfallDialog.__name__+"PhotoLoop" , images)
+        else : 
+            return await step_context.end_dialog(images)
+#-------------------------------------------
+
+# Loop per creazione person --> upload foto
     async def imageUploadStep( self , step_context : WaterfallStepContext ) :
         
         images = []
@@ -213,7 +322,9 @@ class DeveloperModeDialog(ComponentDialog):
         images.append(image.content_url)
 
         return await step_context.end_dialog(images) 
+#------------------------------------------
 
+# Loop per creazione person --> search photo
     async def imageSearchStep(self , step_context : WaterfallStepContext ) : 
         
         images = []
@@ -256,20 +367,7 @@ class DeveloperModeDialog(ComponentDialog):
         step_context.values["searchImages"] = list_search
         
         await step_context.context.send_activity(MessageFactory.attachment(CardFactory.adaptive_card(cardData)))
-        
-        """
-        #Mostro risultati ricerca
-        reply = MessageFactory.list([])
-        reply.attachment_layout = AttachmentLayoutTypes.carousel
-        
-        for url in list_search :
-            reply.attachments.append( self.generateHeroCardPhoto( url , list_search.index(url)+1 ))
-        
-        
-        await step_context.context.send_activity(reply)
-        #carico risulati ricerca nel contesto
-        """
-        
+
         step_context.values["searchImages"] = list_search
 
 
@@ -288,129 +386,43 @@ class DeveloperModeDialog(ComponentDialog):
         choice = step_context.result.value
         images : list = step_context.values["searchImages"]
         imagesContext : list = step_context.values["images"]
-
-        imagesContext.append(images[int(choice)-2])
+        if choice != "Tutte" : 
+            imagesContext.append(images[int(choice)-2])
+        else : 
+            for url in images : #aggiungo tutte
+                imagesContext.append(url)
         #termino dialogo con il risultato selezionato 
         
         return await step_context.end_dialog(imagesContext)
+#--------------------------------------------
 
-    async def namePersonPrompt(self , step_context : WaterfallStepContext) :
-
-        return await step_context.prompt(
-            TextPrompt.__name__ ,
-            PromptOptions(
-                prompt=MessageFactory.text("Inserisci il nome della persona da inserire"),
-                retry_prompt=MessageFactory.text("Prova a reinserire un valore corretto")
-            )
-        )
-
-    async def personGroupPrompt(self, step_context : WaterfallStepContext): 
-        result = step_context.result
-        step_context.values["personName"] = result
-        groups : list = await self.cognitive.getGroupPerson()
-        
-        
-        if groups is None :
-            await step_context.context.send_activity("Sembra non ci sia nessun gruppo creane prima uno")
-            return await step_context.end_dialog()
-        else :
-
-            return await step_context.prompt(ChoicePrompt.__name__ , PromptOptions(
-                prompt=MessageFactory.text("Seleziona il group dove inserire la person"),
-                retry_prompt=MessageFactory.text("La selezione non è valida riprova"),
-                choices=DeveloperModeDialog.getGroupListChoice( groups ),
-                style=ListStyle.hero_card
-            ))
-    
-    async def savePersonPrompt(self , step_context : WaterfallStepContext ) : 
-
-        groupId = step_context.result.value
-        personName = step_context.values["personName"]
-        person_id = await self.cognitive.createPerson(personGroupName=groupId , personName=personName)
-        #Non è stato possibile creare la person 
-        if person_id is None : 
-            await step_context.context.send_activity("Qualcosa è andato storto prova a reinserire i dati")
-            return await step_context.replace_dialog(WaterfallDialog.__name__+"CreatePerson")
-        
-        else : 
-            step_context.values["groupId"] = groupId
-            step_context.values["personId"]= person_id
-            return await step_context.begin_dialog( WaterfallDialog.__name__+"PhotoLoop" )
-    
-    async def beginLoop_step(self, step_context : WaterfallStepContext ) :
-        
-        step_context.values["images"] = step_context.options
-        
-
-        return await step_context.prompt(
-                ChoicePrompt.__name__ , PromptOptions(
-                    prompt=MessageFactory.text("Come vuoi caricare le foto"),
-                    retry_prompt=MessageFactory.text("Seleziona un opzione valida"),
-                    choices=[
-                        Choice(value = "Web") ,
-                        Choice(value="Upload")
-                    ],
-                    style=ListStyle.hero_card
-                )
-            )
-
-    async def choiceUploadPhoto(self , step_context : WaterfallStepContext ) : 
-        
-        result = step_context.result.value
-
-        if result == "Web":
-            
-            return await step_context.begin_dialog(
-                WaterfallDialog.__name__+"SearchPhoto" , 
-                step_context.values["images"] )
-        else :
-            return await step_context.begin_dialog(
-                WaterfallDialog.__name__+"UploadPhoto" , 
-                step_context.values["images"] )
-
-    async def choicePhotoLoop(self, step_context : WaterfallStepContext) : 
-
-        images = step_context.result
-        step_context.values["images"] = images
-
-        return await step_context.prompt(
-            ConfirmPrompt.__name__ , PromptOptions(
-                prompt=MessageFactory.text("Vuoi caricare altre foto ?")
-            )
-        )
-    
-    async def eval_choicePhotoLoop(self, step_context : WaterfallStepContext) :
-        
-        result = step_context.result
-        images = step_context.values["images"]
-
-        if result : 
-            return await step_context.replace_dialog(WaterfallDialog.__name__+"PhotoLoop" , images)
-        else : 
-            return await step_context.end_dialog(images)
-    
     async def savePersonData(self , step_context : WaterfallStepContext) :
         #Carico array di url da dialog precedente
         images : list = step_context.result
         
         personId = step_context.values["personId"]
         groupId = step_context.values["groupId"] 
-        if len(images) == 0 :
+        if len(images) == 0 :#nessuna foto caricata nella list
             await step_context.context.send_activity("Qualche problema nel caricamento delle foto riprova")
-            await step_context.reprompt_dialog()
-            return await step_context.replace_dialog(WaterfallDialog.__name__+"PhotoLoop" , images)
+            await self.cognitive.deletePerson(personId=personId , personGroupId=groupId)
+            return await step_context.end_dialog()
         else : 
             
-            personId = await self.cognitive.addFaceToPerson(groupId,personId,images)
-            if personId == None :
+            result = await self.cognitive.addFaceToPerson(groupId,personId,images)
+            
+            if result == None :#errori nei caricamenti delle immagini nella person
                 await step_context.context.send_activity("Qualche problema nel caricamento delle foto riprova")
-                await step_context.reprompt_dialog()
-                return await step_context.replace_dialog(WaterfallDialog.__name__+"PhotoLoop" , images)
+                await self.cognitive.deletePerson(personId=personId , personGroupId=groupId)
+                return await step_context.end_dialog()
             
             else :    
                 await step_context.context.send_activity("Ok salvato")
                 return await step_context.end_dialog()
 
+##-----------END DIALOG PERSON--------------
+
+
+## Dialog step condiviso per scelta gruppo
     async def choiceGroup_step(self, step_context : WaterfallStepContext ):
         
         groups : list = await self.cognitive.getGroupPerson()
@@ -428,7 +440,8 @@ class DeveloperModeDialog(ComponentDialog):
                     choices=DeveloperModeDialog.getGroupListChoice( groups ),
                     style=ListStyle.hero_card
                 ))
-    
+
+## Dialog elimina dialogo
     async def resetGroup_step(self, step_context : WaterfallStepContext ):
         
         groupId = step_context.result.value
@@ -444,7 +457,9 @@ class DeveloperModeDialog(ComponentDialog):
         else : 
             await step_context.context.send_activity("Non eliminato riprova")
             return await step_context.end_dialog()
-    
+## ----------------------    
+
+## Dialog per reset person     
     async def choicePerson_step(self, step_context : WaterfallStepContext ):
         
         result = step_context.result.value
@@ -494,7 +509,9 @@ class DeveloperModeDialog(ComponentDialog):
             else : 
                 await step_context.context.send_activity("Non eliminato riprova")
                 return await step_context.end_dialog()
-    
+##------------------------   
+
+## Esegui train per group    
     async def executeTrain_step(self , step_context : WaterfallStepContext ) : 
 
         
@@ -521,6 +538,7 @@ class DeveloperModeDialog(ComponentDialog):
             choice = Choice(value=str(i+1))
             options.append(choice)
 
+        options.append(Choice(value="Tutte"))
         return options  
 
     @staticmethod

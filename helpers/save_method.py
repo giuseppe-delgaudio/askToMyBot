@@ -5,7 +5,7 @@ import datetime
 from config import DefaultConfig
 
 
-
+#Invio message a function app per salvataggio in DB
 async def saveMessage(userId : str , channelID : str , message : str ) -> bool :
 
     stringUrl =DefaultConfig.BASE_FUNCTION_URL+channelID+"/"+userId+"?operation=add"
@@ -20,6 +20,7 @@ async def saveMessage(userId : str , channelID : str , message : str ) -> bool :
     else :
         return False
 
+ #Recupero messaggi salvati 
 async def getMessageById(userId : str ,  channelID : str ) -> list :
 
     stringUrl =DefaultConfig.BASE_FUNCTION_URL+channelID+"/"+userId+"?operation=get"
@@ -35,6 +36,7 @@ async def getMessageById(userId : str ,  channelID : str ) -> list :
     else :
         return None 
 
+#Aggiorno list di messages su DB 
 async def updateMessage(userId : str ,  channelID : str , messages : list ) -> bool :
 
     stringUrl =DefaultConfig.BASE_FUNCTION_URL+channelID+"/"+userId+"?operation=update"
