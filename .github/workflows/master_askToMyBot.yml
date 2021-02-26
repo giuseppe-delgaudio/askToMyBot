@@ -32,4 +32,4 @@ jobs:
       with:
         app-name: 'askToMyBot'
         slot-name: 'production'
-        publish-profile: ${{ secrets.AzureAppService_PublishProfile_43ba6de546bc4dd4b3d69b589adb20c9 }}
+        publish-profile: ${{ secrets.AzureAppService_PublishProfile_34b64f1ca01341a9b907c5294f4df36f }}
