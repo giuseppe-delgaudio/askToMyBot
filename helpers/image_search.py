@@ -15,6 +15,6 @@ class Image_Search():
         response = requests.get( search_url , headers=headers , params = params )
         response.raise_for_status()
         search_result = response.json()
-        thumbnail_urls = [img["thumbnailUrl"] for img in search_result["value"][:16]]
+        thumbnail_urls = [img["thumbnailUrl"] for img in search_result["value"][:4]]
         
         return thumbnail_urls
