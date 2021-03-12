@@ -165,7 +165,7 @@ class FaceCompareDialog(ComponentDialog):
 
     # step per elaborazini immagini
     async def elabStep(self,step_context: WaterfallStepContext ) -> DialogTurnResult:
-    ## Risposta affermativa step precedente 
+        ## Risposta affermativa step precedente 
         
         image1 = step_context.values["image1"]
         image2 = step_context.result
